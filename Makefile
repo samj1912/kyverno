@@ -50,43 +50,6 @@ build: kyverno
 PWD := $(CURDIR)
 
 ##################################
-# SIGNATURE CONTAINER
-##################################
-ALPINE_PATH := cmd/alpineBase
-SIG_IMAGE := signatures
-.PHONY: docker-build-signature docker-push-signature
-
-docker-buildx-builder:
-	if ! docker buildx ls | grep -q kyverno; then\
-		docker buildx create --name kyverno --use;\
-	fi
-
-docker-publish-sigs: docker-buildx-builder docker-build-signature docker-push-signature
-
-docker-build-signature: docker-buildx-builder
-	@docker buildx build --file $(PWD)/$(ALPINE_PATH)/Dockerfile --tag $(REPO)/$(SIG_IMAGE):$(IMAGE_TAG) .
-
-docker-push-signature: docker-buildx-builder
-	@docker buildx build --file $(PWD)/$(ALPINE_PATH)/Dockerfile --push --tag $(REPO)/$(SIG_IMAGE):$(IMAGE_TAG) .
-	@docker buildx build --file $(PWD)/$(ALPINE_PATH)/Dockerfile --push --tag $(REPO)/$(SIG_IMAGE):latest .
-
-##################################
-# SBOM CONTAINER
-##################################
-ALPINE_PATH := cmd/alpineBase
-SBOM_IMAGE := sbom
-.PHONY: docker-build-sbom docker-push-sbom
-
-docker-publish-sbom: docker-buildx-builder docker-build-sbom docker-push-sbom
-
-docker-build-sbom: docker-buildx-builder
-	@docker buildx build --file $(PWD)/$(ALPINE_PATH)/Dockerfile --tag $(REPO)/$(SBOM_IMAGE):$(IMAGE_TAG) .
-
-docker-push-sbom: docker-buildx-builder
-	@docker buildx build --file $(PWD)/$(ALPINE_PATH)/Dockerfile --push --tag $(REPO)/$(SBOM_IMAGE):$(IMAGE_TAG) .
-	@docker buildx build --file $(PWD)/$(ALPINE_PATH)/Dockerfile --push --tag $(REPO)/$(SBOM_IMAGE):latest .
-
-##################################
 # INIT CONTAINER
 ##################################
 INITC_PATH := cmd/initContainer
@@ -101,7 +64,7 @@ docker-publish-initContainer: docker-buildx-builder docker-build-initContainer d
 docker-build-initContainer: docker-buildx-builder
 	@docker buildx build --file $(PWD)/$(INITC_PATH)/Dockerfile --progress plane --platform linux/arm64,linux/amd64 --tag $(REPO)/$(INITC_IMAGE):$(IMAGE_TAG) . --build-arg LD_FLAGS=$(LD_FLAGS)
 
-docker-build-initContainer-amd64: 
+docker-build-initContainer-amd64:
 	@docker build -f $(PWD)/$(INITC_PATH)/Dockerfile -t $(REPO)/$(INITC_IMAGE):$(IMAGE_TAG) . --build-arg LD_FLAGS=$(LD_FLAGS) --build-arg TARGETPLATFORM="linux/amd64"
 
 docker-push-initContainer: docker-buildx-builder
@@ -364,4 +327,3 @@ fmt: goimports
 
 vet:
 	go vet ./...
-
